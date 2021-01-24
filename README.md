@@ -2,7 +2,7 @@
 Compress PNG and JPG files using tinypng.com without API token
 
 ## Features
-- No API Token required
+- ***No API Token required***
 - Can compress files recursively
 - Powerful options
 
