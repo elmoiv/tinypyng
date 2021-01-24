@@ -11,7 +11,7 @@ Compress pictures using [tinypng.com](https://tinypng.com/) without API token
 
 > python tinypyng.py --help
 
-usage: tinypyng.py [-h] -p PATH [-r] [-o OUTPUT]
+usage: tinypyng.py [-h] -p PATH [-r] [-o OUTPUT] [-m MAX]
 
 Argument parser for tinypy
 
@@ -23,6 +23,7 @@ optional arguments:
                         limit
   -o OUTPUT, --output OUTPUT
                         Custom folder to store compressed pictures
+  -m MAX, --max MAX     Maximum compression ratio -- Default is 50 --
 ```
 
 ## Examples
@@ -32,6 +33,10 @@ optional arguments:
 
 // Compress a single png recursively
 > python tinypyng.py -p "path\\to\\file.png" -r
+
+// Compress a single png recursively with maximum compression
+// of 70 %
+> python tinypyng.py -p "path\\to\\file.png" -r -m 70
 
 // Compress all pictures inside folder
 > python tinypyng.py -p "path\\to\\folder\\"
