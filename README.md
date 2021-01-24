@@ -8,7 +8,7 @@ Compress PNG and JPG files using tinypng.com without API token
 
 ## Usage
 ```console
-// kkn
+
 > python tinypyng.py --help
 
 usage: tinypyng.py [-h] -p PATH [-r] [-o OUTPUT]
