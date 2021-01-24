@@ -6,7 +6,7 @@ HEADERS = {
     'content-type': 'image/png'
 }
 
-class TinyPng:
+class TinyPyng:
     def __init__(self, log=True):
         self.png = None
         self.output_folder = None
@@ -144,7 +144,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    tinypng = TinyPng()
+    tinypng = TinyPyng()
     tinypng.is_recursive = args.recursive
     tinypng.output_folder = args.output
 
