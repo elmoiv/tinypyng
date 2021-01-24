@@ -1,5 +1,5 @@
 # TinyPyng
-Compress pictures using tinypng.com without API token
+Compress pictures using [tinypng.com](https://tinypng.com/) without API token
 
 ## Features
 - ***No API Token required***
