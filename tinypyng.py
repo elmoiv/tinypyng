@@ -153,7 +153,7 @@ if __name__ == '__main__':
     if not files:
         exit(0)
 
-    if tinypng.recursive:
+    if tinypng.is_recursive:
         tinypng.batch_recursive(files)
     else:
         tinypng.batch_compress(files)
