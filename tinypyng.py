@@ -1,10 +1,17 @@
 import os, requests, json, time, argparse
+from image_slicer import slice, join
+from io import BytesIO
+from PIL import Image
+from threading import Thread
 
 SHRINK_URL = 'https://tinypng.com/web/shrink'
 HEADERS = {
     'user-agent': 'Mozilla/5.0',
     'content-type': 'image/png'
 }
+
+def percent(total, current):
+    return round((total - current) * 100 / total, 2)
 
 class TinyPyng:
     def __init__(self, log=True):
@@ -15,6 +22,11 @@ class TinyPyng:
         self.raw_data = None
         self.api = None
         self.url = None
+        self.max = 50
+
+    def correct_max(self):
+        if self.max < 0 or self.max > 100:
+            self.max = 50
 
     def log(self, text):
         if self.log_enabled:
@@ -39,7 +51,7 @@ class TinyPyng:
             'output': self.rename(output['url'])
         }
 
-    def save(self):
+    def save(self, is_return=False):
         self.url = self.api['output']
         
         dir_name = os.path.dirname(self.png)
@@ -51,11 +63,32 @@ class TinyPyng:
 
         base_name = self.url.split('/')[-1]
         
+        raw_data = requests.get(self.url).content
+        
+        if is_return:
+            return raw_data
+        
         with open(os.path.join(dir_name, base_name), 'wb') as png:
-            raw_data = requests.get(self.url).content
             png.write(raw_data)
     
-    def compress(self):
+    def compress_large(self):
+        self.correct_max()
+
+        # Slice image into 10 parts
+        mini_pngs = list(slice(self.png, 10, save=False))
+
+        # For each part we compress
+        for png in mini_pngs:
+            self.raw_data = png.image.tobytes()
+            compressed = BytesIO(self.compress(True))
+            print(compressed)
+            png.image = Image.open(compressed)
+        
+        # Join compressed parts again
+        self.raw_data = join(mini_pngs).tobytes()
+        print(self.raw_data)
+
+    def compress(self, is_return=False):
         if not self.raw_data:
             self.raw_data = open(self.png, 'rb').read()
         
@@ -75,7 +108,7 @@ class TinyPyng:
         
         self.log('[DONE] Compression: {0} => {1} = {2}%'.format(*self.api.values()))
 
-        self.save()
+        return self.save(is_return)
     
     def recursive(self):
         """
@@ -87,7 +120,7 @@ class TinyPyng:
         before = self.api['before']
 
         try:
-            while self.api['ratio']:
+            while self.api['ratio'] and percent(before, self.api['after']) < self.max:
                 self.raw_data = requests.get(self.api['output']).content
                 self.compress()
                 self.save()
@@ -95,7 +128,7 @@ class TinyPyng:
         except KeyboardInterrupt:
             self.log(f'[ERROR] Recursion Interrupted!')
         
-        ratio = round((before - self.api['after']) * 100 / before, 2)
+        ratio = percent(before, self.api['after'])
         self.log(f'[FINAL] Compression: {before}'
                  f' => {self.api["after"]} = {ratio}%')
 
@@ -127,9 +160,8 @@ def decide_type(inpt):
         if not files:
             return print('Nothing found or no valid paths in', os.path.basename(inpt))
         return files
-    
+
     return [inpt] if inpt[-3:] in 'pngjpg' else None
-    
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Argument parser for tinypy')
@@ -141,12 +173,14 @@ if __name__ == '__main__':
     required.add_argument('-p', '--path', type=str, help='PNG or JPG file, Directory of PNGs, txt file of paths', required=True, default=".")
     optional.add_argument('-r', '--recursive', help='Recursively compress the photo to the maximum possible limit', action='store_true')
     optional.add_argument('-o', '--output', type=str, default=None, help='Custom folder to store compressed pictures')
+    optional.add_argument('-m', '--max', type=int, default=50, help='Maximum compression ratio -- Default is 50 --')
 
     args = parser.parse_args()
 
     tinypng = TinyPyng()
     tinypng.is_recursive = args.recursive
     tinypng.output_folder = args.output
+    tinypng.max = args.max
 
     files = decide_type(args.path)
 
