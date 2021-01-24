@@ -1,8 +1,4 @@
 import os, requests, json, time, argparse
-from image_slicer import slice, join
-from io import BytesIO
-from PIL import Image
-from threading import Thread
 
 SHRINK_URL = 'https://tinypng.com/web/shrink'
 HEADERS = {
@@ -70,23 +66,6 @@ class TinyPyng:
         
         with open(os.path.join(dir_name, base_name), 'wb') as png:
             png.write(raw_data)
-    
-    def compress_large(self):
-        self.correct_max()
-
-        # Slice image into 10 parts
-        mini_pngs = list(slice(self.png, 10, save=False))
-
-        # For each part we compress
-        for png in mini_pngs:
-            self.raw_data = png.image.tobytes()
-            compressed = BytesIO(self.compress(True))
-            print(compressed)
-            png.image = Image.open(compressed)
-        
-        # Join compressed parts again
-        self.raw_data = join(mini_pngs).tobytes()
-        print(self.raw_data)
 
     def compress(self, is_return=False):
         if not self.raw_data:
