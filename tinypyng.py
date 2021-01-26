@@ -1,5 +1,4 @@
 import os, requests, json, time, argparse
-from threading import Thread
 
 SHRINK_URL = 'https://tinypng.com/web/shrink'
 HEADERS = {
