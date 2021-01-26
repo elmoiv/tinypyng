@@ -3,6 +3,7 @@ Compress pictures using [tinypng.com](https://tinypng.com/) without API token
 
 ## Features
 - ***No API Token required***
+- ***No Size limit***
 - Can compress files recursively
 - Powerful options
 
