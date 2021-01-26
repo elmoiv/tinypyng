@@ -1,4 +1,5 @@
 import os, requests, json, time, argparse
+from threading import Thread
 
 SHRINK_URL = 'https://tinypng.com/web/shrink'
 HEADERS = {
@@ -6,8 +7,47 @@ HEADERS = {
     'content-type': 'image/png'
 }
 
+class upload_in_chunks:
+    def __init__(self, raw_data, ext, chunksize=1 << 13):
+        self.filename = f'tinypyng_temp.{ext}'
+        open(self.filename, 'wb').write(raw_data)
+        
+        self.chunksize = chunksize
+        self.totalsize = os.path.getsize(self.filename)
+        self.readsofar = 0
+
+    def __iter__(self):
+        with open(self.filename, 'rb') as file:
+            while True:
+                data = file.read(self.chunksize)
+                if not data:
+                    print()
+                    break
+                self.readsofar += len(data)
+
+                percent = int((self.readsofar * 50 / self.totalsize))
+                size_type = 1 << 20
+                if self.totalsize < size_type:
+                    size_type = 1 << 10
+                r_size = self.totalsize / size_type
+                d_size = self.readsofar / size_type
+                pgbar = '[PROGRESS] [{}{}] '.format(
+                    '█' * percent,
+                    ' ' * (50 - percent)) + '[{0:.2f}/{1:.2f} {2}]'.format(d_size, r_size, ['KB', 'MB'][size_type == 1 << 20])
+                print(f'\r{pgbar}'.format(percent=percent), end='\r')
+                yield data
+        
+        os.remove(self.filename)
+
+    def __len__(self):
+        return self.totalsize
+
 def percent(total, current):
     return round((total - current) * 100 / total, 2)
+
+def get_ext(_file):
+    *_, ext = os.path.basename(_file).split('.')
+    return ext
 
 class TinyPyng:
     def __init__(self, log=True):
@@ -18,11 +58,11 @@ class TinyPyng:
         self.raw_data = None
         self.api = None
         self.url = None
-        self.max = 50
+        self.max = 100
 
     def correct_max(self):
         if self.max < 0 or self.max > 100:
-            self.max = 50
+            self.max = 100
 
     def log(self, text):
         if self.log_enabled:
@@ -47,7 +87,7 @@ class TinyPyng:
             'output': self.rename(output['url'])
         }
 
-    def save(self, is_return=False):
+    def save(self):
         self.url = self.api['output']
         
         dir_name = os.path.dirname(self.png)
@@ -61,21 +101,19 @@ class TinyPyng:
         
         raw_data = requests.get(self.url).content
         
-        if is_return:
-            return raw_data
-        
         with open(os.path.join(dir_name, base_name), 'wb') as png:
             png.write(raw_data)
 
-    def compress(self, is_return=False):
+    def compress(self):
         if not self.raw_data:
             self.raw_data = open(self.png, 'rb').read()
         
+        self.log(f"[RECURSIVE {['OFF', 'ON'][self.is_recursive]}]")
         self.log(f'[UPLOAD] {os.path.basename(self.png)}')
         response = requests.post(
             SHRINK_URL,
             headers=HEADERS,
-            data=self.raw_data
+            data=upload_in_chunks(self.raw_data, get_ext(self.png))
         )
 
         self.api = self.prettify(response.text)
@@ -87,7 +125,7 @@ class TinyPyng:
         
         self.log('[DONE] Compression: {0} => {1} = {2}%'.format(*self.api.values()))
 
-        return self.save(is_return)
+        self.save()
     
     def recursive(self):
         """
@@ -114,13 +152,19 @@ class TinyPyng:
         self.save()
 
     def batch_compress(self, file_list):
+        output_folder = self.output_folder
         for file in file_list:
+            self.__init__()
+            self.output_folder = output_folder
             self.png = file
             self.log('[BATCH] Processing ' + os.path.basename(file))
             self.compress()
 
     def batch_recursive(self, file_list):
+        output_folder = self.output_folder
         for file in file_list:
+            self.__init__()
+            self.output_folder = output_folder
             self.png = file
             self.log('[BATCH] Processing ' + os.path.basename(file))
             self.recursive()
@@ -134,13 +178,13 @@ def decide_type(inpt):
         files = [os.path.join(inpt, i) for i in os.listdir(inpt) if i[-3:] in 'pngjpg']
         return print('Nothing found in', inpt) if not files else files
 
-    if inpt[-3:] == 'txt':
+    if inpt[-3:].lower() == 'txt':
         files = [i for i in open(inpt).read().split('\n') if os.path.exists(i)]
         if not files:
             return print('Nothing found or no valid paths in', os.path.basename(inpt))
         return files
 
-    return [inpt] if inpt[-3:] in 'pngjpg' else None
+    return [inpt] if inpt[-3:].lower() in 'pngjpg' else print('Unsupported file format!')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Argument parser for tinypy')
@@ -152,7 +196,7 @@ if __name__ == '__main__':
     required.add_argument('-p', '--path', type=str, help='PNG or JPG file, Directory of PNGs, txt file of paths', required=True, default=".")
     optional.add_argument('-r', '--recursive', help='Recursively compress the photo to the maximum possible limit', action='store_true')
     optional.add_argument('-o', '--output', type=str, default=None, help='Custom folder to store compressed pictures')
-    optional.add_argument('-m', '--max', type=int, default=50, help='Maximum compression ratio -- Default is 50 --')
+    optional.add_argument('-m', '--max', type=int, default=100, help='Maximum compression ratio -- Default is 50 --')
 
     args = parser.parse_args()
 
@@ -165,8 +209,9 @@ if __name__ == '__main__':
 
     if not files:
         exit(0)
-
-    if tinypng.is_recursive:
-        tinypng.batch_recursive(files)
+    
+    if len(files) == 1:
+        tinypng.png = files[0]
+        [tinypng.compress, tinypng.recursive][args.recursive]()
     else:
-        tinypng.batch_compress(files)
+        [tinypng.batch_compress, tinypng.batch_recursive][args.recursive](files)
