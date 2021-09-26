@@ -14,7 +14,7 @@ Compress pictures using [tinypng.com](https://tinypng.com/) without API token
 
 usage: tinypyng.py [-h] -p PATH [-r] [-o OUTPUT] [-m MAX]
 
-Argument parser for tinypy
+Argument parser for tinypyng
 
 required arguments:
   -p PATH, --path PATH  PNG or JPG file, Directory of PNGs, txt file of paths
