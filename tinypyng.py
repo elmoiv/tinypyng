@@ -186,7 +186,7 @@ def decide_type(inpt):
     return [inpt] if inpt[-3:].lower() in 'pngjpg' else print('Unsupported file format!')
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Argument parser for tinypy')
+    parser = argparse.ArgumentParser(description='Argument parser for tinypyng')
     parser._action_groups.pop()
 
     required = parser.add_argument_group('required arguments')
