@@ -195,7 +195,7 @@ if __name__ == '__main__':
     required.add_argument('-p', '--path', type=str, help='PNG or JPG file, Directory of PNGs, txt file of paths', required=True, default=".")
     optional.add_argument('-r', '--recursive', help='Recursively compress the photo to the maximum possible limit', action='store_true')
     optional.add_argument('-o', '--output', type=str, default=None, help='Custom folder to store compressed pictures')
-    optional.add_argument('-m', '--max', type=int, default=100, help='Maximum compression ratio -- Default is 50 --')
+    optional.add_argument('-m', '--max', type=int, default=50, help='Maximum compression ratio -- Default is 50 --')
 
     args = parser.parse_args()
 
