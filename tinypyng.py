@@ -1,6 +1,7 @@
 import os, requests, json, time, argparse
 
 SHRINK_URL = 'https://tinypng.com/web/shrink'
+
 HEADERS = {
     'user-agent': 'Mozilla/5.0',
     'content-type': 'image/png'
