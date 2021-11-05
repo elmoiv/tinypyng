@@ -1,7 +1,7 @@
 import os, requests, json, time, argparse
+from randagent import generate_useragent
 
 SHRINK_URL = 'https://tinypng.com/web/shrink'
-
 HEADERS = {
     'user-agent': 'Mozilla/5.0',
     'content-type': 'image/png'
@@ -58,7 +58,8 @@ class TinyPyng:
         self.raw_data = None
         self.api = None
         self.url = None
-        self.max = 100
+        self.overwrite = False
+        self.max = 50
 
     def correct_max(self):
         if self.max < 0 or self.max > 100:
@@ -70,7 +71,8 @@ class TinyPyng:
 
     def rename(self, url):
         *perfix, ext = os.path.basename(self.png).split('.')
-        return f'{url}/{".".join(perfix)}_compressed.{ext}'
+        postfix = '' if self.overwrite else '_compressed'
+        return f'{url}/{".".join(perfix)}{postfix}.{ext}'
 
     def prettify(self, response):
         dct = json.loads(response)
@@ -99,7 +101,10 @@ class TinyPyng:
 
         base_name = self.url.split('/')[-1]
         
-        raw_data = requests.get(self.url).content
+        raw_data = requests.get(
+            self.url,
+            headers={'user-agent': generate_useragent()}
+        ).content
         
         with open(os.path.join(dir_name, base_name), 'wb') as png:
             png.write(raw_data)
@@ -110,6 +115,9 @@ class TinyPyng:
         
         self.log(f"[RECURSIVE {['OFF', 'ON'][self.is_recursive]}]")
         self.log(f'[UPLOAD] {os.path.basename(self.png)}')
+        
+        HEADERS['user-agent'] = generate_useragent()
+        
         response = requests.post(
             SHRINK_URL,
             headers=HEADERS,
@@ -138,7 +146,10 @@ class TinyPyng:
 
         try:
             while self.api['ratio'] and percent(before, self.api['after']) < self.max:
-                self.raw_data = requests.get(self.api['output']).content
+                self.raw_data = requests.get(
+                    self.api['output'],
+                    headers={'user-agent': generate_useragent()}
+                ).content
                 self.compress()
                 self.save()
         
@@ -187,7 +198,7 @@ def decide_type(inpt):
     return [inpt] if inpt[-3:].lower() in 'pngjpg' else print('Unsupported file format!')
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Argument parser for tinypyng')
+    parser = argparse.ArgumentParser(description='Argument parser for tinypy')
     parser._action_groups.pop()
 
     required = parser.add_argument_group('required arguments')
@@ -197,6 +208,7 @@ if __name__ == '__main__':
     optional.add_argument('-r', '--recursive', help='Recursively compress the photo to the maximum possible limit', action='store_true')
     optional.add_argument('-o', '--output', type=str, default=None, help='Custom folder to store compressed pictures')
     optional.add_argument('-m', '--max', type=int, default=50, help='Maximum compression ratio -- Default is 50 --')
+    optional.add_argument('-ow', '--overwrite', help='Overwrite input PNG', action='store_true')
 
     args = parser.parse_args()
 
@@ -204,6 +216,7 @@ if __name__ == '__main__':
     tinypng.is_recursive = args.recursive
     tinypng.output_folder = args.output
     tinypng.max = args.max
+    tinypng.overwrite = args.overwrite
 
     files = decide_type(args.path)
 
