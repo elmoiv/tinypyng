@@ -12,7 +12,7 @@ Compress pictures using [tinypng.com](https://tinypng.com/) without API token
 
 > python tinypyng.py --help
 
-usage: tinypyng.py [-h] -p PATH [-r] [-o OUTPUT] [-m MAX]
+usage: tinypyng.py [-h] -p PATH [-r] [-o OUTPUT] [-m MAX] [-ow]
 
 Argument parser for tinypyng
 
@@ -25,6 +25,7 @@ optional arguments:
   -o OUTPUT, --output OUTPUT
                         Custom folder to store compressed pictures
   -m MAX, --max MAX     Maximum compression ratio -- Default is 50 --
+  -ow, --overwrite      Overwrite input PNG
 ```
 
 ## Examples
