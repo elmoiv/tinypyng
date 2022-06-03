@@ -1,5 +1,6 @@
 import os, requests, json, time, argparse
 from randagent import generate_useragent
+from pathlib import Path
 
 SHRINK_URL = 'https://tinypng.com/web/shrink'
 HEADERS = {
@@ -60,6 +61,11 @@ class TinyPyng:
         self.url = None
         self.overwrite = False
         self.max = 50
+    
+    def reset(self):
+        self.api = None
+        self.url = None
+        self.raw_data = None
 
     def correct_max(self):
         if self.max < 0 or self.max > 100:
@@ -165,7 +171,7 @@ class TinyPyng:
     def batch_compress(self, file_list):
         output_folder = self.output_folder
         for file in file_list:
-            self.__init__()
+            self.reset()
             self.output_folder = output_folder
             self.png = file
             self.log('[BATCH] Processing ' + os.path.basename(file))
@@ -174,7 +180,7 @@ class TinyPyng:
     def batch_recursive(self, file_list):
         output_folder = self.output_folder
         for file in file_list:
-            self.__init__()
+            self.reset()
             self.output_folder = output_folder
             self.png = file
             self.log('[BATCH] Processing ' + os.path.basename(file))
@@ -186,7 +192,8 @@ def decide_type(inpt):
         return None
 
     if os.path.isdir(inpt):
-        files = [os.path.join(inpt, i) for i in os.listdir(inpt) if i[-3:] in 'pngjpg']
+        files = [str(i) for i in Path(inpt).rglob('*') if str(i)[-3:].lower() in 'pngjpg']
+        # files = [os.path.join(inpt, i) for i in os.listdir(inpt) if i[-3:] in 'pngjpg']
         return print('Nothing found in', inpt) if not files else files
 
     if inpt[-3:].lower() == 'txt':
@@ -209,7 +216,7 @@ if __name__ == '__main__':
     optional.add_argument('-o', '--output', type=str, default=None, help='Custom folder to store compressed pictures')
     optional.add_argument('-m', '--max', type=int, default=50, help='Maximum compression ratio -- Default is 50 --')
     optional.add_argument('-ow', '--overwrite', help='Overwrite input PNG', action='store_true')
-
+    
     args = parser.parse_args()
 
     tinypng = TinyPyng()
