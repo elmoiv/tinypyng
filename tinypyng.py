@@ -2,7 +2,7 @@ import os, requests, json, time, argparse
 from randagent import generate_useragent
 from pathlib import Path
 
-SHRINK_URL = 'https://tinypng.com/web/shrink'
+SHRINK_URL = 'https://tinypng.com/backend/opt/shrink'
 HEADERS = {
     'user-agent': 'Mozilla/5.0',
     'content-type': 'image/png'
@@ -96,6 +96,7 @@ class TinyPyng:
         }
 
     def save(self):
+        self.log(f"[DOWNLOADING COMPRESSED] In Progress...")
         self.url = self.api['output']
         
         dir_name = os.path.dirname(self.png)
@@ -114,6 +115,8 @@ class TinyPyng:
         
         with open(os.path.join(dir_name, base_name), 'wb') as png:
             png.write(raw_data)
+        
+        self.log(f"[DOWNLOADING COMPRESSED] Done")
 
     def compress(self):
         if not self.raw_data:
@@ -192,7 +195,7 @@ def decide_type(inpt):
         return None
 
     if os.path.isdir(inpt):
-        files = [str(i) for i in Path(inpt).rglob('*') if str(i)[-3:].lower() in 'pngjpg']
+        files = [str(i) for i in Path(inpt).rglob('*') if str(i)[-3:].lower() in 'pngjpgjpeg']
         # files = [os.path.join(inpt, i) for i in os.listdir(inpt) if i[-3:] in 'pngjpg']
         return print('Nothing found in', inpt) if not files else files
 
